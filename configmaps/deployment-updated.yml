@@ -1,0 +1,287 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    openshift.io/generated-by: OpenShiftNewApp
+    image.openshift.io/triggers: '[{"from":{"kind":"ImageStreamTag","name":"rec-otc-core:latest"},"fieldPath":"spec.template.spec.containers[?(@.name==\"otc-core\")].image"}]'
+  name: otc-core
+  namespace: bb-dev-otc
+  labels:
+    app: otc-core
+    app.kubernetes.io/component: otc-core
+    app.kubernetes.io/instance: otc-core
+    app.kubernetes.io/name: openjdk-17
+    app.openshift.io/runtime: spring
+spec:
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      updatePeriodSeconds: 1
+      intervalSeconds: 1
+      timeoutSeconds: 600
+      maxUnavailable: 25%
+      maxSurge: 25%
+  revisionHistoryLimit: 10
+  progressDeadlineSeconds: 600
+  replicas: 1
+  selector:
+    matchLabels:
+      app: otc-core
+  template:
+    metadata:
+      labels:
+        app: otc-core
+        app.language: java
+        app.project: bb-otc
+        app.team: Recaudaciones
+        app.version: 2.0.1
+      annotations:
+        openshift.io/generated-by: OpenShiftNewApp
+    spec:
+      volumes:
+        - name: application-yml
+          configMap:
+            name: otc-core-application-yml
+            defaultMode: 420
+        - name: truststore-otc-jks
+          secret:
+            secretName: truststore-otc-jks
+            defaultMode: 420
+        - name: aguabl
+          configMap:
+            name: aguabl
+            defaultMode: 420
+        - name: atm
+          configMap:
+            name: atm
+            defaultMode: 420
+        - name: avanceefectivo
+          configMap:
+            name: avanceefectivo
+            defaultMode: 420
+        - name: belcorp
+          configMap:
+            name: belcorp
+            defaultMode: 420
+        - name: broadnet
+          configMap:
+            name: broadnet
+            defaultMode: 420
+        - name: cep
+          configMap:
+            name: cep
+            defaultMode: 420
+        - name: clarocp
+          configMap:
+            name: clarocp
+            defaultMode: 420
+        - name: clarop
+          configMap:
+            name: clarop
+            defaultMode: 420
+        - name: claror
+          configMap:
+            name: claror
+            defaultMode: 420
+        - name: clarotv
+          configMap:
+            name: clarotv
+            defaultMode: 420
+        - name: cnel
+          configMap:
+            name: cnel
+            defaultMode: 420
+        - name: cnt
+          configMap:
+            name: cnt
+            defaultMode: 420
+        - name: costotransaccion
+          configMap:
+            name: costotransaccion
+            defaultMode: 420
+        - name: creditia
+          configMap:
+            name: creditia
+            defaultMode: 420
+        - name: cte
+          configMap:
+            name: cte
+            defaultMode: 420
+        - name: cvialco
+          configMap:
+            name: cvialco
+            defaultMode: 420
+        - name: depenlinea
+          configMap:
+            name: depenlinea
+            defaultMode: 420
+        - name: depositoespecial
+          configMap:
+            name: depositoespecial
+            defaultMode: 420
+        - name: deposito
+          configMap:
+            name: deposito
+            defaultMode: 420
+        - name: deprati
+          configMap:
+            name: deprati
+            defaultMode: 420
+        - name: deptemp
+          configMap:
+            name: deptemp
+            defaultMode: 420
+        - name: directvpospago
+          configMap:
+            name: directvpospago
+            defaultMode: 420
+        - name: directvpre
+          configMap:
+            name: directvpre
+            defaultMode: 420
+        - name: ecuaquimica
+          configMap:
+            name: ecuaquimica
+            defaultMode: 420
+        - name: ecut
+          configMap:
+            name: ecut
+            defaultMode: 420
+        - name: educacion
+          configMap:
+            name: educacion
+            defaultMode: 420
+        - name: etapa
+          configMap:
+            name: etapa
+            defaultMode: 420
+      containers:
+        - resources:
+            limits:
+              cpu: 100m
+              memory: 600Mi
+            requests:
+              cpu: 50m
+              memory: 400Mi
+          readinessProbe:
+            httpGet:
+              path: /signals/healthcheck/readiness
+              port: 8778
+              scheme: HTTP
+            initialDelaySeconds: 90
+            timeoutSeconds: 20
+            periodSeconds: 600
+            successThreshold: 1
+            failureThreshold: 3
+          terminationMessagePath: /dev/termination-log
+          name: otc-core
+          livenessProbe:
+            httpGet:
+              path: /signals/healthcheck/livenessProbe
+              port: 8778
+              scheme: HTTP
+            initialDelaySeconds: 90
+            timeoutSeconds: 20
+            periodSeconds: 600
+            successThreshold: 1
+            failureThreshold: 3
+          env:
+            - name: APP_LOGGING_LEVEL
+              value: INFO
+            - name: ROOT_LOGGING_LEVEL
+              value: ERROR
+            - name: TZ
+              value: America/Guayaquil
+            - name: JAVA_OPTS
+              value: -Xms64m -Xmx4096m
+            - name: GC_MAX_METASPACE_SIZE
+              value: "256"
+            - name: JAVA_OPTS_APPEND
+              value: -Djdk.tls.client.protocols=TLSv1.2 -Dfile.encoding=UTF-8 -Duser.timezone=America/Guayaquil
+            - name: OTC_REDIS_HOST
+              value: otc-cache.bb-dev-otc.svc.cluster.local
+            - name: LOGGING_LEVEL_ROOT
+              value: INFO
+            - name: AWS_XRAY_DAEMON_ADDRESS
+              value: 172.30.169.249:2000
+          ports:
+            - containerPort: 8080
+              protocol: TCP
+            - containerPort: 8443
+              protocol: TCP
+            - containerPort: 8778
+              protocol: TCP
+          imagePullPolicy: Always
+          volumeMounts:
+            - name: application-yml
+              mountPath: /deployments/application.properties
+              subPath: application.properties
+            - name: truststore-otc-jks
+              mountPath: /secret/truststore-otc.jks
+              subPath: truststore-otc.jks
+            - name: aguabl
+              mountPath: /deployments/xslt_desa
+            - name: atm
+              mountPath: /deployments/xslt_desa
+            - name: avanceefectivo
+              mountPath: /deployments/xslt_desa
+            - name: belcorp
+              mountPath: /deployments/xslt_desa
+            - name: broadnet
+              mountPath: /deployments/xslt_desa
+            - name: cep
+              mountPath: /deployments/xslt_desa
+            - name: clarocp
+              mountPath: /deployments/xslt_desa
+            - name: clarop
+              mountPath: /deployments/xslt_desa
+            - name: claror
+              mountPath: /deployments/xslt_desa
+            - name: clarotv
+              mountPath: /deployments/xslt_desa
+            - name: cnel
+              mountPath: /deployments/xslt_desa
+            - name: cnt
+              mountPath: /deployments/xslt_desa
+            - name: costotransaccion
+              mountPath: /deployments/xslt_desa
+            - name: creditia
+              mountPath: /deployments/xslt_desa
+            - name: cte
+              mountPath: /deployments/xslt_desa
+            - name: cvialco
+              mountPath: /deployments/xslt_desa
+            - name: depenlinea
+              mountPath: /deployments/xslt_desa
+            - name: depositoespecial
+              mountPath: /deployments/xslt_desa
+            - name: deposito
+              mountPath: /deployments/xslt_desa
+            - name: deprati
+              mountPath: /deployments/xslt_desa
+            - name: deptemp
+              mountPath: /deployments/xslt_desa
+            - name: directvpospago
+              mountPath: /deployments/xslt_desa
+            - name: directvpre
+              mountPath: /deployments/xslt_desa
+            - name: ecuaquimica
+              mountPath: /deployments/xslt_desa
+            - name: ecut
+              mountPath: /deployments/xslt_desa
+            - name: educacion
+              mountPath: /deployments/xslt_desa
+            - name: etapa
+              mountPath: /deployments/xslt_desa
+          terminationMessagePolicy: File
+          image: image-registry.openshift-image-registry.svc:5000/bb-dev-otc/rec-otc-core:latest
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+      schedulerName: default-scheduler
+      hostAliases:
+        - ip: 172.16.11.16
+          hostnames:
+            - jms.bolivariano.fin.ec
+        - ip: 172.16.30.182
+          hostnames:
+            - soavides.bolivariano.fin.ec

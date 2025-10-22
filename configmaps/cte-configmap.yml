@@ -1,0 +1,715 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cte
+data:
+  CTE_C_IN.xsl: |
+    <?xml version="1.0" encoding="UTF-8"?>
+    <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:mmn="http://www.bolivariano.com/MensajeCTE" xmlns:ns6="http://www.bolivariano.com/mensaje/MensajeOTC" xmlns:java="java" exclude-result-prefixes="xsl mmn ns6">
+        <xsl:template match="/">
+            <mmn:MensajeEntradaConsultarCEP>
+                <xsl:variable name="identificador" select="/ns6:entradaConsultarDeuda/ns6:servicio/identificador"/>
+                <xsl:variable name="servicio" select="substring(/ns6:entradaConsultarDeuda/ns6:servicio/codigoConvenio,1,3)"/>
+                <xsl:variable name="codidentificador" select="/ns6:entradaConsultarDeuda/ns6:servicio/codigoTipoIdentificador"/>
+                <canal>
+                    <xsl:value-of select="/ns6:entradaConsultarDeuda/ns6:canal"/>
+                </canal>
+                <fecha>
+                    <xsl:value-of select="/ns6:entradaConsultarDeuda/ns6:servicio/datosAdicionales/datoAdicional[codigo = &quot;s_date&quot;]/valor"/>
+                </fecha>
+                <oficina>
+                    <xsl:value-of select="/ns6:entradaConsultarDeuda/ns6:servicio/datosAdicionales/datoAdicional[codigo = &quot;s_ofi&quot;]/valor"/>
+                </oficina>
+                <terminal>
+                    <xsl:value-of select="/ns6:entradaConsultarDeuda/ns6:servicio/datosAdicionales/datoAdicional[codigo = &quot;s_term&quot;]/valor"/>
+                </terminal>
+                <usuario>
+                    <xsl:value-of select="/ns6:entradaConsultarDeuda/ns6:servicio/datosAdicionales/datoAdicional[codigo = &quot;s_user&quot;]/valor"/>
+                </usuario>
+                <cte>
+                    <empresa>2572</empresa>
+                    <canal>WEB</canal>
+                    <provincia>GUA</provincia>
+                    <opcion>C</opcion>
+                    <tipoMoneda>1</tipoMoneda>
+                    <servicioPersona>1</servicioPersona>
+                    <cuenta>
+                        <rubroPerson>PCTG</rubroPerson>
+                        <serviPerson>CSPB</serviPerson>
+                    </cuenta>
+                    <servicio>
+                        <xsl:value-of select="$servicio"/>
+                    </servicio>
+                    <xsl:choose>
+                        <xsl:when test="$codidentificador='PLA'">
+                            <placa>
+                                <xsl:value-of select="$identificador"/>
+                            </placa>
+                        </xsl:when>
+                        <xsl:when test="$codidentificador='TRAMITE'">
+                            <solicitud>
+                                <xsl:value-of select="$identificador"/>
+                            </solicitud>
+                        </xsl:when>
+                        <xsl:otherwise>
+                            <tipoIdentificacion>
+                                <xsl:value-of select="$codidentificador"/>
+                            </tipoIdentificacion>
+                            <identificacion>
+                                <xsl:value-of select="$identificador"/>
+                            </identificacion>
+                        </xsl:otherwise>
+                    </xsl:choose>
+                    <suministro>
+                        <xsl:value-of select="$identificador"/>
+                    </suministro>
+                </cte>
+                <informacionCore>
+                    <origenTransaccion>
+                        <xsl:value-of select="/ns6:entradaConsultarDeuda/ns6:servicio/datosAdicionales/datoAdicional[codigo = &quot;s_org&quot;]/valor"/>
+                    </origenTransaccion>
+                    <rolBPM>
+                        <xsl:value-of select="/ns6:entradaConsultarDeuda/ns6:servicio/datosAdicionales/datoAdicional[codigo = &quot;s_rol&quot;]/valor"/>
+                    </rolBPM>
+                    <secuencial>
+                        <xsl:value-of select="/ns6:entradaConsultarDeuda/ns6:servicio/datosAdicionales/datoAdicional[codigo = &quot;s_ssn&quot;]/valor"/>
+                    </secuencial>
+                    <servidor>
+                        <xsl:value-of select="/ns6:entradaConsultarDeuda/ns6:servicio/datosAdicionales/datoAdicional[codigo = &quot;s_srv&quot;]/valor"/>
+                    </servidor>
+                    <servidorLocal>
+                        <xsl:value-of select="/ns6:entradaConsultarDeuda/ns6:servicio/datosAdicionales/datoAdicional[codigo = &quot;s_lsrv&quot;]/valor"/>
+                    </servidorLocal>
+                </informacionCore>
+            </mmn:MensajeEntradaConsultarCEP>
+        </xsl:template>
+    </xsl:stylesheet>
+  CTE_C_OUT.xsl: |
+    <?xml version="1.0" encoding="UTF-8"?>
+    <xsl:stylesheet version="1.0" xmlns:xsd1="http://www.bolivariano.com/MensajeCTE" xmlns:ns15="http://www.bolivariano.com/mensaje/MensajeOTC" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" exclude-result-prefixes="xsd1 ns15 xsl">
+        <xsl:template match="/">
+            <xsl:choose>
+                <xsl:when test="/xsd1:MensajeSalidaConsultarCEP/codigoError='0'">
+                    <ns15:salidaConsultarDeuda>
+                        <ns15:codigoError>0</ns15:codigoError>
+                        <ns15:datosAdicionales>
+                            <ns15:datoAdicional>
+                                <codigo>numeroComprobante</codigo>
+                                <etiqueta>Numero Documento</etiqueta>
+                                <valor>
+                                    <xsl:value-of select="/xsd1:MensajeSalidaConsultarCEP/cte/numeroComprobante"/>
+                                </valor>
+                                <visible>true</visible>
+                            </ns15:datoAdicional>
+                            <ns15:datoAdicional>
+                                <codigo>identificacion</codigo>
+                                <etiqueta>Numero Identificacion</etiqueta>
+                                <valor>
+                                    <xsl:value-of select="/xsd1:MensajeSalidaConsultarCEP/cte/identificacion"/>
+                                </valor>
+                                <visible>true</visible>
+                            </ns15:datoAdicional>
+                            <xsl:choose>
+                                <xsl:when test="/xsd1:MensajeSalidaConsultarCEP/cte/tipoReferencia != 'CIT'">
+                                    <ns15:datoAdicional>
+                                        <codigo>tramite</codigo>
+                                        <etiqueta>Tramite</etiqueta>
+                                        <valor>
+                                            <xsl:value-of select="/xsd1:MensajeSalidaConsultarCEP/cte/tramite"/>
+                                        </valor>
+                                        <visible>true</visible>
+                                    </ns15:datoAdicional>
+                                </xsl:when>
+                            </xsl:choose>
+                            <ns15:datoAdicional>
+                                <codigo>valorComision</codigo>
+                                <valor>
+                                    <xsl:choose>
+                                        <xsl:when test="/xsd1:MensajeSalidaConsultarCEP/cte/valorComision > 0 ">
+                                            <xsl:variable name="nvalorTotalComision" select="string(/xsd1:MensajeSalidaConsultarCEP/cte/valorComision)"/>
+                                            <xsl:value-of select="substring($nvalorTotalComision, 1, string-length(substring-before($nvalorTotalComision, '.')) + 3)"/>
+                                        </xsl:when>
+                                        <xsl:otherwise>
+                                            <xsl:text disable-output-escaping="no">0.0</xsl:text>
+                                        </xsl:otherwise>
+                                    </xsl:choose>
+                                </valor>
+                                <visible>false</visible>
+                            </ns15:datoAdicional>
+                        </ns15:datosAdicionales>
+                        <xsl:choose>
+                            <xsl:when test="/xsd1:MensajeSalidaConsultarCEP/cte/tipoReferencia != 'SOL'">
+                                <ns15:recibos>
+                                    <ns15:recibo>
+                                        <concepto>
+                                            Documentos pendientes a pagar
+                                            <xsl:value-of select="/xsd1:MensajeSalidaConsultarCEP/cte/numeroCitaciones"/>
+                                        </concepto>
+                                        <totalAPagar>
+                                            <xsl:value-of select="/xsd1:MensajeSalidaConsultarCEP/cte/valorTotalCancelar"/>
+                                        </totalAPagar>
+                                    </ns15:recibo>
+                                </ns15:recibos>
+                            </xsl:when>
+                        </xsl:choose>
+                        <ns15:mensajeUsuario>Transaccion Exitosa</ns15:mensajeUsuario>
+                        <ns15:formaPago>TOTAL</ns15:formaPago>
+                        <ns15:formaPagoRecibos>UNICO_CRONOLOGICO</ns15:formaPagoRecibos>
+                        <ns15:montoTotal>
+                            <xsl:value-of select="/xsd1:MensajeSalidaConsultarCEP/cte/valorCitacion"/>
+                        </ns15:montoTotal>
+                        <ns15:nombreCliente>
+                            <xsl:value-of select="/xsd1:MensajeSalidaConsultarCEP/cte/nombre"/>
+                        </ns15:nombreCliente>
+                    </ns15:salidaConsultarDeuda>
+                </xsl:when>
+                <xsl:otherwise>
+                    <ns15:salidaConsultarDeuda>
+                        <ns15:codigoError>
+                            <xsl:value-of select="/xsd1:MensajeSalidaConsultarCEP/codigoError"/>
+                        </ns15:codigoError>
+                        <ns15:mensajeUsuario>
+                            <xsl:value-of select="/xsd1:MensajeSalidaConsultarCEP/mensajeUsuario"/>
+                        </ns15:mensajeUsuario>
+                    </ns15:salidaConsultarDeuda>
+                </xsl:otherwise>
+            </xsl:choose>
+        </xsl:template>
+    </xsl:stylesheet>
+  CTE_P_IN.xsl: |
+    <xsl:stylesheet version="1.0" exclude-result-prefixes="java ns6 tns xsl" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:tns="http://www.bolivariano.com/ws/OTCService" xmlns:mmn="http://www.bolivariano.com/MensajeCTE" xmlns:ns6="http://www.bolivariano.com/mensaje/MensajeOTC" xmlns:java="java">
+        <xsl:template match="/">
+            <mmn:MensajeEntradaPagar>
+                <xsl:variable name="codidentificador" select="/ns6:entradaEjecutarPago/ns6:servicio/codigoTipoIdentificador"/>
+                <xsl:variable name="identificador" select="/ns6:entradaEjecutarPago/ns6:servicio/identificador"/>
+                <xsl:variable name="servicio" select="substring(/ns6:entradaEjecutarPago/ns6:servicio/codigoConvenio,1,3)"/>
+                <canal>
+                    <xsl:value-of select="/ns6:entradaEjecutarPago/ns6:canal"/>
+                </canal>
+                <fecha>
+                    <xsl:value-of select="/ns6:entradaEjecutarPago/ns6:fechaPago"/>
+                </fecha>
+                <oficina>
+                    <xsl:value-of select="/ns6:entradaEjecutarPago/ns6:datosAdicionales/ns6:datoAdicional[codigo = &quot;s_ofi&quot;]/valor"/>
+                </oficina>
+                <terminal>
+                    <xsl:value-of select="/ns6:entradaEjecutarPago/ns6:datosAdicionales/ns6:datoAdicional[codigo = &quot;s_term&quot;]/valor"/>
+                </terminal>
+                <transaccion>
+                    <xsl:text disable-output-escaping="no">62154</xsl:text>
+                </transaccion>
+                <usuario>
+                    <xsl:value-of select="/ns6:entradaEjecutarPago/ns6:datosAdicionales/ns6:datoAdicional[codigo = &quot;s_user&quot;]/valor"/>
+                </usuario>
+                <cte>
+                    <aplicativoCobis>N</aplicativoCobis>
+                    <autorizacion>N</autorizacion>
+                    <xsl:choose>
+                        <xsl:when test="/ns6:entradaEjecutarPago/ns6:canal = 'CNB'">
+                            <canal>CNB</canal>
+                        </xsl:when>
+                        <xsl:otherwise>
+                            <canal>WEB</canal>
+                        </xsl:otherwise>
+                    </xsl:choose>
+                    <provincia>GUA</provincia>
+                    <servicio>
+                        <xsl:value-of select="$servicio"/>
+                    </servicio>
+                    <xsl:if test="$servicio != 'CIT'">
+                        <tramite>
+                            <xsl:value-of select="/ns6:entradaEjecutarPago/ns6:datosAdicionales/ns6:datoAdicional[codigo = &quot;tramite&quot;]/valor"/>
+                        </tramite>
+                    </xsl:if>
+                    <xsl:choose>
+                        <xsl:when test="/ns6:entradaEjecutarPago/ns6:canal = 'CNB'">
+                            <xsl:if test="/ns6:entradaEjecutarPago/ns6:datosAdicionales/ns6:datoAdicional[codigo = &quot;p_forma_pago&quot;]/valor = 'EFE'">
+                                <efectivo>
+                                    <xsl:value-of select="/ns6:entradaEjecutarPago/ns6:valorPago"/>
+                                </efectivo>
+                                <efectivoComision>
+                                    <xsl:value-of select="/ns6:entradaEjecutarPago/ns6:valorComision"/>
+                                </efectivoComision>
+                            </xsl:if>
+                            <xsl:if test="/ns6:entradaEjecutarPago/ns6:datosAdicionales/ns6:datoAdicional[codigo = &quot;p_forma_pago&quot;]/valor = 'DEB'">
+                                <debito>
+                                    <xsl:value-of select="/ns6:entradaEjecutarPago/ns6:valorPago"/>
+                                </debito>
+                                <debitoComision>
+                                    <xsl:value-of select="/ns6:entradaEjecutarPago/ns6:valorComision"/>
+                                </debitoComision>
+                            </xsl:if>
+                        </xsl:when>
+                        <xsl:otherwise>
+                            <xsl:choose>
+                                <xsl:when test="/ns6:entradaEjecutarPago/ns6:datosAdicionales/ns6:datoAdicional[codigo = &quot;MPA_TC&quot;]">
+                                    <debito>
+                                        <xsl:text disable-output-escaping="no">0.00</xsl:text>
+                                    </debito>
+                                    <debitoComision>
+                                        <xsl:value-of select="/ns6:entradaEjecutarPago/ns6:valorComision"/>
+                                    </debitoComision>
+                                    <efectivo>
+                                        <xsl:text disable-output-escaping="no">0.00</xsl:text>
+                                    </efectivo>
+                                    <efectivoComision>
+                                        <xsl:text disable-output-escaping="no">0.00</xsl:text>
+                                    </efectivoComision>
+                                </xsl:when>
+                                <xsl:otherwise>
+                                    <debito>
+                                        <xsl:value-of select="/ns6:entradaEjecutarPago/ns6:valorPago"/>
+                                    </debito>
+                                    <debitoComision>
+                                        <xsl:value-of select="/ns6:entradaEjecutarPago/ns6:valorComision"/>
+                                    </debitoComision>
+                                    <efectivo>0.00</efectivo>
+                                    <efectivoComision>0.00</efectivoComision>
+                                </xsl:otherwise>
+                            </xsl:choose>
+                        </xsl:otherwise>
+                    </xsl:choose>
+                    <efectivo>0.00</efectivo>
+                    <efectivoComision>0.00</efectivoComision>
+                    <xsl:choose>
+                        <xsl:when test="/ns6:entradaEjecutarPago/ns6:canal = 'CNB'">
+                            <empresa>
+                                <xsl:value-of select="/ns6:entradaEjecutarPago/ns6:datosAdicionales/ns6:datoAdicional[codigo = &quot;p_codigoEmpresa&quot;]/valor"/>
+                            </empresa>
+                        </xsl:when>
+                        <xsl:otherwise>
+                            <empresa>
+                                <xsl:value-of select="/ns6:entradaEjecutarPago/ns6:servicio/codigoEmpresa"/>
+                            </empresa>
+                        </xsl:otherwise>
+                    </xsl:choose>
+                    <fechaContable>
+                        <xsl:value-of select="/ns6:entradaEjecutarPago/ns6:datosAdicionales/ns6:datoAdicional[codigo = &quot;s_date&quot;]/valor"/>
+                    </fechaContable>
+                    <fechaEfectiva>
+                        <xsl:value-of select="java:format(java:text.SimpleDateFormat.new(&quot;yyyy-MM-dd&apos;T&apos;HH:mm:ss.SSS&quot;), java:util.Date.new())"/>
+                    </fechaEfectiva>
+                    <xsl:choose>
+                        <xsl:when test="$codidentificador='TRAMITE'">
+                            <solicitud>
+                                <xsl:value-of select="$identificador"/>
+                            </solicitud>
+                        </xsl:when>
+                        <xsl:otherwise>
+                            <tipoIdentificacion>
+                                <xsl:value-of select="$codidentificador"/>
+                            </tipoIdentificacion>
+                        </xsl:otherwise>
+                    </xsl:choose>
+                    <identificacion>
+                        <xsl:value-of select="/ns6:entradaEjecutarPago/ns6:datosAdicionales/ns6:datoAdicional[codigo = &quot;identificacion&quot;]/valor"/>
+                    </identificacion>
+                    <nombre>
+                        <xsl:value-of select="/ns6:entradaEjecutarPago/ns6:nombreCliente"/>
+                    </nombre>
+                    <suministro>
+                        <xsl:value-of select="$identificador"/>
+                    </suministro>
+                    <tipoMoneda>1</tipoMoneda>
+                    <tipoPago>M</tipoPago>
+                    <totalComision>
+                        <xsl:value-of select="/ns6:entradaEjecutarPago/ns6:valorComision"/>
+                    </totalComision>
+                    <valorTotalCancelar>
+                        <xsl:value-of select="format-number(/ns6:entradaEjecutarPago/ns6:valorPago,'0.00') "/>
+                    </valorTotalCancelar>
+                    <cuenta>
+                        <cuenta>
+                            <xsl:value-of select="/ns6:entradaEjecutarPago/ns6:cuenta"/>
+                        </cuenta>
+                        <tipoCuenta>
+                            <xsl:value-of select="/ns6:entradaEjecutarPago/ns6:tipoCuenta"/>
+                        </tipoCuenta>
+                    </cuenta>
+                    <numeroComprobante>
+                        <xsl:value-of select="/ns6:entradaEjecutarPago/ns6:datosAdicionales/ns6:datoAdicional[codigo = &quot;numeroComprobante&quot;]/valor"/>
+                    </numeroComprobante>
+                </cte>
+                <tipoPago>M</tipoPago>
+                <informacionCore>
+                    <rolBPM>
+                        <xsl:value-of select="/ns6:entradaEjecutarPago/ns6:datosAdicionales/ns6:datoAdicional[codigo = &quot;s_rol&quot;]/valor"/>
+                    </rolBPM>
+                    <origenTransaccion>
+                        <xsl:value-of select="/ns6:entradaEjecutarPago/ns6:datosAdicionales/ns6:datoAdicional[codigo = &quot;s_org&quot;]/valor"/>
+                    </origenTransaccion>
+                    <secuencial>
+                        <xsl:value-of select="/ns6:entradaEjecutarPago/ns6:datosAdicionales/ns6:datoAdicional[codigo = &quot;s_ssn&quot;]/valor"/>
+                    </secuencial>
+                    <servidor>
+                        <xsl:value-of select="/ns6:entradaEjecutarPago/ns6:datosAdicionales/ns6:datoAdicional[codigo = &quot;s_srv&quot;]/valor"/>
+                    </servidor>
+                    <servidorLocal>
+                        <xsl:value-of select="/ns6:entradaEjecutarPago/ns6:datosAdicionales/ns6:datoAdicional[codigo = &quot;s_lsrv&quot;]/valor"/>
+                    </servidorLocal>
+                </informacionCore>
+                <xsl:if test="/ns6:entradaEjecutarPago/ns6:canal = 'CNB'">
+                    <CNB>
+                        <autorizacion>
+                            <xsl:value-of select="/ns6:entradaEjecutarPago/ns6:datosAdicionales/ns6:datoAdicional[codigo = 'p_autorizacionCNB']/valor"/>
+                        </autorizacion>
+                        <comercio>
+                            <xsl:value-of select="/ns6:entradaEjecutarPago/ns6:datosAdicionales/ns6:datoAdicional[codigo = 'p_comercio']/valor"/>
+                        </comercio>
+                        <terminalID>
+                            <xsl:value-of select="/ns6:entradaEjecutarPago/ns6:datosAdicionales/ns6:datoAdicional[codigo = 'p_terminalID']/valor"/>
+                        </terminalID>
+                        <agencia>
+                            <xsl:value-of select="/ns6:entradaEjecutarPago/ns6:datosAdicionales/ns6:datoAdicional[codigo = 'p_agencia']/valor"/>
+                        </agencia>
+                        <red>
+                            <xsl:value-of select="/ns6:entradaEjecutarPago/ns6:datosAdicionales/ns6:datoAdicional[codigo = 'p_red']/valor"/>
+                        </red>
+                        <secuencial>
+                            <xsl:value-of select="/ns6:entradaEjecutarPago/ns6:datosAdicionales/ns6:datoAdicional[codigo = 's_ssn']/valor"/>
+                        </secuencial>
+                        <valor>
+                            <xsl:value-of select="/ns6:entradaEjecutarPago/ns6:valorPago"/>
+                        </valor>
+                        <nombreCliente>
+                            <xsl:value-of select="/ns6:entradaEjecutarPago/ns6:datosAdicionales/ns6:datoAdicional[codigo = &quot;p_nombreCliente&quot;]/valor"/>
+                        </nombreCliente>
+                        <identificacionCliente>
+                            <xsl:value-of select="/ns6:entradaEjecutarPago/ns6:datosAdicionales/ns6:datoAdicional[codigo = &quot;p_identificacionCliente&quot;]/valor"/>
+                        </identificacionCliente>
+                        <modoCorreccion>
+                            <xsl:text disable-output-escaping="no">N</xsl:text>
+                        </modoCorreccion>
+                        <tipoTransaccion>P</tipoTransaccion>
+                    </CNB>
+                </xsl:if>
+                <xsl:if test="/ns6:entradaEjecutarPago/ns6:datosAdicionales/ns6:datoAdicional[codigo = &quot;MPA_TC&quot;]">
+                    <formaPago>
+                        <tarjeta>
+                            <tarjeta>
+                                <xsl:value-of select="/ns6:entradaEjecutarPago/ns6:datosAdicionales/ns6:datoAdicional[codigo = &quot;MPA_TC&quot;]/valor"/>
+                            </tarjeta>
+                            <valor>
+                                <xsl:value-of select="/ns6:entradaEjecutarPago/ns6:valorPago"/>
+                            </valor>
+                            <valorComision>
+                                <xsl:value-of select="/ns6:entradaEjecutarPago/ns6:valorComision"/>
+                            </valorComision>
+                            <mesesDiferido>
+                                <xsl:value-of select="/ns6:entradaEjecutarPago/ns6:datosAdicionales/ns6:datoAdicional[codigo = &quot;FPA_TC&quot;]/valor"/>
+                            </mesesDiferido>
+                        </tarjeta>
+                    </formaPago>
+                </xsl:if>
+                <codigoComercio>
+                    <xsl:choose>
+                        <xsl:when test="/ns6:entradaEjecutarPago/ns6:canal = 'VEN'">
+                            <xsl:text disable-output-escaping="no">2006597</xsl:text>
+                        </xsl:when>
+                        <xsl:when test="/ns6:entradaEjecutarPago/ns6:canal = 'IBK'">
+                            <xsl:text disable-output-escaping="no">2006595</xsl:text>
+                        </xsl:when>
+                        <xsl:when test="/ns6:entradaEjecutarPago/ns6:canal = 'WAP'">
+                            <xsl:text disable-output-escaping="no">2006596</xsl:text>
+                        </xsl:when>
+                        <xsl:when test="/ns6:entradaEjecutarPago/ns6:canal = 'SAT'">
+                            <xsl:text disable-output-escaping="no">2006598</xsl:text>
+                        </xsl:when>
+                        <xsl:otherwise>
+                            <xsl:text disable-output-escaping="no">2006598</xsl:text>
+                        </xsl:otherwise>
+                    </xsl:choose>
+                </codigoComercio>
+            </mmn:MensajeEntradaPagar>
+        </xsl:template>
+    </xsl:stylesheet>
+  CTE_P_OUT.xsl: |
+    <?xml version="1.0" encoding="UTF-8"?>
+    <xsl:stylesheet version="1.0" xmlns:mmn="http://www.bolivariano.com/MensajeCTE" xmlns:ns9="http://www.bolivariano.com/mensaje/MensajeOTC" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:java="java" exclude-result-prefixes="java xsl ns9 mmn">
+        <xsl:template match="/">
+            <xsl:choose>
+                <xsl:when test="/mmn:MensajeSalidaPagar/codigoError='0'">
+                    <ns9:salidaEjecutarPago>
+                        <ns9:codigoError>0</ns9:codigoError>
+                        <ns9:fechaDebito>
+                            <xsl:value-of select="java:format(java:text.SimpleDateFormat.new(&quot;yyyy-MM-dd&apos;T&apos;HH:mm:ss&quot;), java:util.Date.new())"/>
+                        </ns9:fechaDebito>
+                        <ns9:fechaPago>
+                            <xsl:value-of select="/mmn:MensajeSalidaPagar/cte/fechaContable"/>
+                        </ns9:fechaPago>
+                        <ns9:mensajeUsuario>Transaccion ok</ns9:mensajeUsuario>
+                        <ns9:referencia>
+                            <xsl:value-of select="/mmn:MensajeSalidaPagar/informacionCore/secuencial"/>
+                        </ns9:referencia>
+                        <ns9:datosAdicionales>
+                            <ns9:datoAdicional>
+                                <codigo>horario</codigo>
+                                <valor>
+                                    <xsl:value-of select="/mmn:MensajeSalidaPagar/cte/horario"/>
+                                </valor>
+                            </ns9:datoAdicional>
+                        </ns9:datosAdicionales>
+                    </ns9:salidaEjecutarPago>
+                </xsl:when>
+                <xsl:otherwise>
+                    <ns9:salidaEjecutarPago>
+                        <ns9:codigoError>
+                            <xsl:value-of select="/mmn:MensajeSalidaPagar/codigoError"/>
+                        </ns9:codigoError>
+                        <ns9:mensajeUsuario>
+                            <xsl:value-of select="/mmn:MensajeSalidaPagar/mensajeUsuario"/>
+                        </ns9:mensajeUsuario>
+                    </ns9:salidaEjecutarPago>
+                </xsl:otherwise>
+            </xsl:choose>
+        </xsl:template>
+    </xsl:stylesheet>
+  CTE_R_IN.xsl: |
+    <xsl:stylesheet version="1.0" exclude-result-prefixes="java ns6 tns xsl" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:tns="http://www.bolivariano.com/ws/OTCService" xmlns:mmn="http://www.bolivariano.com/MensajeCTE" xmlns:ns6="http://www.bolivariano.com/mensaje/MensajeOTC" xmlns:java="java">
+        <xsl:template match="/">
+            <mmn:MensajeEntradaReversarPago>
+                <xsl:variable name="codidentificador" select="/ns6:entradaEjecutarReverso/ns6:servicio/codigoTipoIdentificador"/>
+                <xsl:variable name="identificador" select="/ns6:entradaEjecutarReverso/ns6:servicio/identificador"/>
+                <xsl:variable name="servicio" select="substring(/ns6:entradaEjecutarReverso/ns6:servicio/codigoConvenio,1,3)"/>
+                <canal>
+                    <xsl:value-of select="/ns6:entradaEjecutarReverso/ns6:canal"/>
+                </canal>
+                <fecha>
+                    <xsl:value-of select="/ns6:entradaEjecutarReverso/ns6:datosAdicionales/ns6:datoAdicional[codigo = &quot;s_date&quot;]/valor"/>
+                </fecha>
+                <oficina>
+                    <xsl:value-of select="/ns6:entradaEjecutarReverso/ns6:datosAdicionales/ns6:datoAdicional[codigo = &quot;s_ofi&quot;]/valor"/>
+                </oficina>
+                <terminal>
+                    <xsl:value-of select="/ns6:entradaEjecutarReverso/ns6:datosAdicionales/ns6:datoAdicional[codigo = &quot;s_term&quot;]/valor"/>
+                </terminal>
+                <transaccion>
+                    <xsl:text disable-output-escaping="no">62154</xsl:text>
+                </transaccion>
+                <usuario>
+                    <xsl:value-of select="/ns6:entradaEjecutarReverso/ns6:datosAdicionales/ns6:datoAdicional[codigo = &quot;s_user&quot;]/valor"/>
+                </usuario>
+                <cte>
+                    <aplicativoCobis>N</aplicativoCobis>
+                    <autorizacion>N</autorizacion>
+                    <xsl:choose>
+                        <xsl:when test="/ns6:entradaEjecutarReverso/ns6:canal = 'CNB'">
+                            <canal>CNB</canal>
+                        </xsl:when>
+                        <xsl:otherwise>
+                            <canal>WEB</canal>
+                        </xsl:otherwise>
+                    </xsl:choose>
+                    <provincia>GUA</provincia>
+                    <servicio>
+                        <xsl:value-of select="$servicio"/>
+                    </servicio>
+                    <xsl:if test="$servicio != 'CIT'">
+                        <tramite>
+                            <xsl:value-of select="/ns6:entradaEjecutarReverso/ns6:datosAdicionales/ns6:datoAdicional[codigo = &quot;tramite&quot;]/valor"/>
+                        </tramite>
+                    </xsl:if>
+                    <xsl:choose>
+                        <xsl:when test="/ns6:entradaEjecutarReverso/ns6:canal = 'CNB'">
+                            <xsl:if test="/ns6:entradaEjecutarReverso/ns6:datosAdicionales/ns6:datoAdicional[codigo = &quot;p_forma_pago&quot;]/valor = 'EFE'">
+                                <efectivo>
+                                    <xsl:value-of select="/ns6:entradaEjecutarReverso/ns6:valorPago"/>
+                                </efectivo>
+                                <efectivoComision>
+                                    <xsl:value-of select="/ns6:entradaEjecutarReverso/ns6:valorComision"/>
+                                </efectivoComision>
+                            </xsl:if>
+                            <xsl:if test="/ns6:entradaEjecutarReverso/ns6:datosAdicionales/ns6:datoAdicional[codigo = &quot;p_forma_pago&quot;]/valor = 'DEB'">
+                                <debito>
+                                    <xsl:value-of select="/ns6:entradaEjecutarReverso/ns6:valorPago"/>
+                                </debito>
+                                <debitoComision>
+                                    <xsl:value-of select="/ns6:entradaEjecutarReverso/ns6:valorComision"/>
+                                </debitoComision>
+                            </xsl:if>
+                        </xsl:when>
+                        <xsl:otherwise>
+                            <debito>
+                                <xsl:value-of select="/ns6:entradaEjecutarReverso/ns6:valorPago"/>
+                            </debito>
+                            <debitoComision>
+                                <xsl:value-of select="/ns6:entradaEjecutarReverso/ns6:valorComision"/>
+                            </debitoComision>
+                        </xsl:otherwise>
+                    </xsl:choose>
+                    <efectivo>0.00</efectivo>
+                    <efectivoComision>0.00</efectivoComision>
+                    <xsl:choose>
+                        <xsl:when test="/ns6:entradaEjecutarReverso/ns6:canal = 'CNB'">
+                            <empresa>
+                                <xsl:value-of select="/ns6:entradaEjecutarReverso/ns6:datosAdicionales/ns6:datoAdicional[codigo = &quot;p_codigoEmpresa&quot;]/valor"/>
+                            </empresa>
+                        </xsl:when>
+                        <xsl:otherwise>
+                            <empresa>
+                                <xsl:value-of select="/ns6:entradaEjecutarReverso/ns6:datosAdicionales/ns6:datoAdicional[codigo = &quot;codigoEmpresa&quot;]/valor"/>
+                            </empresa>
+                        </xsl:otherwise>
+                    </xsl:choose>
+                    <fechaContable>
+                        <xsl:value-of select="substring(/ns6:entradaEjecutarReverso/ns6:datosAdicionales/ns6:datoAdicional[codigo = &quot;s_date&quot;]/valor,1,10)"/>
+                    </fechaContable>
+                    <fechaEfectiva>
+                        <xsl:value-of select="/ns6:entradaEjecutarReverso/ns6:datosAdicionales/ns6:datoAdicional[codigo = &quot;s_date&quot;]/valor"/>
+                    </fechaEfectiva>
+                    <solicitud>
+                        <xsl:value-of select="$identificador"/>
+                    </solicitud>
+                    <identificacion>
+                        <xsl:value-of select="/ns6:entradaEjecutarReverso/ns6:servicio/identificador"/>
+                    </identificacion>
+                    <nombre>
+                        <xsl:value-of select="/ns6:entradaEjecutarReverso/ns6:nombreCliente"/>
+                    </nombre>
+                    <operacionProceso>T</operacionProceso>
+                    <xsl:choose>
+                        <xsl:when test="/ns6:entradaEjecutarReverso/ns6:servicio/codigoConvenio='CIT'">
+                            <suministro>
+                                <xsl:value-of select="/ns6:entradaEjecutarReverso/ns6:datosAdicionales/ns6:datoAdicional[codigo = &quot;suministro&quot;]/valor"/>
+                            </suministro>
+                        </xsl:when>
+                        <xsl:otherwise>
+                            <suministro>
+                                <xsl:value-of select="/ns6:entradaEjecutarReverso/ns6:servicio/identificador"/>
+                            </suministro>
+                        </xsl:otherwise>
+                    </xsl:choose>
+                    <tipoMoneda>1</tipoMoneda>
+                    <tipoPago>M</tipoPago>
+                    <totalComision>
+                        <xsl:value-of select="/ns6:entradaEjecutarReverso/ns6:valorComision"/>
+                    </totalComision>
+                    <valorTotalCancelar>
+                        <xsl:value-of select="format-number(/ns6:entradaEjecutarReverso/ns6:valorPago,'0.00') "/>
+                    </valorTotalCancelar>
+                    <cuenta>
+                        <cuenta>
+                            <xsl:value-of select="/ns6:entradaEjecutarReverso/ns6:cuenta"/>
+                        </cuenta>
+                        <tipoCuenta>
+                            <xsl:value-of select="/ns6:entradaEjecutarReverso/ns6:tipoCuenta"/>
+                        </tipoCuenta>
+                        <consComision>0</consComision>
+                        <subtotal>0.00</subtotal>
+                    </cuenta>
+                    <Autenticacion>
+                        <usuario>7</usuario>
+                        <clave>BBSfLooV1NH</clave>
+                    </Autenticacion>
+                    <numeroComprobante>
+                        <xsl:value-of select="/ns6:entradaEjecutarReverso/ns6:datosAdicionales/ns6:datoAdicional[codigo = &quot;numeroComprobante&quot;]/valor"/>
+                    </numeroComprobante>
+                </cte>
+                <cliente>
+                    <compania>2</compania>
+                    <idBanco>7</idBanco>
+                    <tipoId>N</tipoId>
+                </cliente>
+                <tipoPago>M</tipoPago>
+                <informacionCore>
+                    <modoCorreccion>
+                        <xsl:text disable-output-escaping="no">S</xsl:text>
+                    </modoCorreccion>
+                    <xsl:choose>
+                        <xsl:when test="/ns6:entradaEjecutarReverso/ns6:canal = 'CNB'">
+                            <reversoTransaccion>
+                                <xsl:value-of select="/ns6:entradaEjecutarReverso/ns6:datosAdicionales/ns6:datoAdicional[codigo = &quot;p_reversoTransaccion&quot;]/valor"/>
+                            </reversoTransaccion>
+                        </xsl:when>
+                        <xsl:otherwise>
+                            <reversoTransaccion>
+                                <xsl:value-of select="/ns6:entradaEjecutarReverso/ns6:datosAdicionales/ns6:datoAdicional[codigo = &quot;s_ssn_reverse&quot;]/valor"/>
+                            </reversoTransaccion>
+                        </xsl:otherwise>
+                    </xsl:choose>
+                    <rolBPM>
+                        <xsl:value-of select="/ns6:entradaEjecutarReverso/ns6:datosAdicionales/ns6:datoAdicional[codigo = &quot;s_rol&quot;]/valor"/>
+                    </rolBPM>
+                    <sec>
+                        <xsl:value-of select="/ns6:entradaEjecutarReverso/ns6:datosAdicionales/ns6:datoAdicional[codigo = &quot;s_ssn&quot;]/valor"/>
+                    </sec>
+                    <secuencial>
+                        <xsl:value-of select="/ns6:entradaEjecutarReverso/ns6:datosAdicionales/ns6:datoAdicional[codigo = &quot;s_ssn&quot;]/valor"/>
+                    </secuencial>
+                    <servidor>
+                        <xsl:value-of select="/ns6:entradaEjecutarReverso/ns6:datosAdicionales/ns6:datoAdicional[codigo = &quot;s_srv&quot;]/valor"/>
+                    </servidor>
+                </informacionCore>
+                <xsl:if test="/ns6:entradaEjecutarReverso/ns6:canal = 'CNB'">
+                    <CNB>
+                        <autorizacion>
+                            <xsl:value-of select="/ns6:entradaEjecutarReverso/ns6:datosAdicionales/ns6:datoAdicional[codigo = 'p_autorizacionCNB']/valor"/>
+                        </autorizacion>
+                        <comercio>
+                            <xsl:value-of select="/ns6:entradaEjecutarReverso/ns6:datosAdicionales/ns6:datoAdicional[codigo = 'p_comercio']/valor"/>
+                        </comercio>
+                        <terminalID>
+                            <xsl:value-of select="/ns6:entradaEjecutarReverso/ns6:datosAdicionales/ns6:datoAdicional[codigo = 'p_terminalID']/valor"/>
+                        </terminalID>
+                        <agencia>
+                            <xsl:value-of select="/ns6:entradaEjecutarReverso/ns6:datosAdicionales/ns6:datoAdicional[codigo = 'p_agencia']/valor"/>
+                        </agencia>
+                        <red>
+                            <xsl:value-of select="/ns6:entradaEjecutarReverso/ns6:datosAdicionales/ns6:datoAdicional[codigo = 'p_red']/valor"/>
+                        </red>
+                        <secuencial>
+                            <xsl:value-of select="/ns6:entradaEjecutarReverso/ns6:datosAdicionales/ns6:datoAdicional[codigo = 's_ssn']/valor"/>
+                        </secuencial>
+                        <valor>
+                            <xsl:value-of select="/ns6:entradaEjecutarReverso/ns6:valorPago"/>
+                        </valor>
+                        <nombreCliente>
+                            <xsl:value-of select="/ns6:entradaEjecutarReverso/ns6:datosAdicionales/ns6:datoAdicional[codigo = &quot;p_nombreCliente&quot;]/valor"/>
+                        </nombreCliente>
+                        <identificacionCliente>
+                            <xsl:value-of select="/ns6:entradaEjecutarReverso/ns6:datosAdicionales/ns6:datoAdicional[codigo = &quot;p_identificacionCliente&quot;]/valor"/>
+                        </identificacionCliente>
+                        <modoCorreccion>
+                            <xsl:text disable-output-escaping="no">S</xsl:text>
+                        </modoCorreccion>
+                        <reversoTransaccion>
+                            <xsl:value-of select="/ns6:entradaEjecutarReverso/ns6:datosAdicionales/ns6:datoAdicional[codigo = &quot;p_reversoTransaccion&quot;]/valor"/>
+                        </reversoTransaccion>
+                    </CNB>
+                </xsl:if>
+            </mmn:MensajeEntradaReversarPago>
+        </xsl:template>
+    </xsl:stylesheet>
+  CTE_R_OUT.xsl: |
+    <?xml version="1.0" encoding="UTF-8"?>
+    <xsl:stylesheet version="1.0" xmlns:mmn="http://www.bolivariano.com/MensajeCTE" xmlns:ns9="http://www.bolivariano.com/mensaje/MensajeOTC" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:java="java" exclude-result-prefixes="java xsl ns9 mmn">
+        <xsl:template match="/">
+            <xsl:choose>
+                <xsl:when test="/mmn:MensajeSalidaReversarPago/codigoErrorRemoto='T0000'">
+                    <ns9:salidaEjecutarPago>
+                        <ns9:codigoError>0</ns9:codigoError>
+                        <ns9:fechaDebito>
+                            <xsl:value-of select="java:format(java:text.SimpleDateFormat.new(&quot;yyyy-MM-dd&apos;T&apos;HH:mm:ss&quot;), java:util.Date.new())"/>
+                        </ns9:fechaDebito>
+                        <ns9:fechaPago>
+                            <xsl:value-of select="/mmn:MensajeSalidaReversarPago/cte/fechaContable"/>
+                        </ns9:fechaPago>
+                        <ns9:mensajeUsuario>Transaccion ok</ns9:mensajeUsuario>
+                        <ns9:referencia>
+                            <xsl:value-of select="/mmn:MensajeSalidaReversarPago/informacionCore/secuencial"/>
+                        </ns9:referencia>
+                    </ns9:salidaEjecutarPago>
+                </xsl:when>
+                <xsl:otherwise>
+                    <ns9:salidaEjecutarPago>
+                        <ns9:codigoError>
+                            <xsl:value-of select="/mmn:MensajeSalidaReversarPago/codigoError"/>
+                        </ns9:codigoError>
+                        <ns9:mensajeUsuario>
+                            <xsl:value-of select="/mmn:MensajeSalidaReversarPago/mensajeUsuario"/>
+                        </ns9:mensajeUsuario>
+                    </ns9:salidaEjecutarPago>
+                </xsl:otherwise>
+            </xsl:choose>
+        </xsl:template>
+    </xsl:stylesheet>

@@ -2,7 +2,6 @@ import type { EncodingOption } from 'node:fs';
 import { readdir, readFile, writeFile, mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import xmlFormat from 'xml-formatter';
-import * as YAML from 'yaml';
 
 export interface ConfigMap {
     apiVersion: string;
@@ -20,11 +19,9 @@ interface GroupFiles {
 const outputDir: string = 'configmaps';
 const outputDirPath: string = join(__dirname, outputDir);
 const recursive: boolean = true;
-const encoding = 'utf-8';
+const encoding: EncodingOption = 'utf-8';
 const dir: string = 'xslt_desa';
 const filesPath: string = join(__dirname, dir);
-const deploymentFile: string = 'deployment.yml';
-const deploymentPath: string = join(__dirname, deploymentFile);
 
 // Sufijos válidos para las acciones
 const validSuffixes = ['_C_IN.xsl', '_C_OUT.xsl', '_P_IN.xsl', '_P_OUT.xsl', '_R_IN.xsl', '_R_OUT.xsl'];
@@ -98,96 +95,6 @@ function generateConfigMapYAML(configMapName: string, dataMap: Record<string, st
     return yamlContent;
 }
 
-/**
- * Actualiza el deployment con los nuevos volúmenes y volumeMounts
- */
-async function updateDeploymentWithVolumes(configMapNames: string[]): Promise<void> {
-    try {
-        // Leer el archivo de deployment
-        const deploymentContent = await readFile(deploymentPath, encoding);
-        const deployment = YAML.parse(deploymentContent);
-
-        // Verificar que tiene la estructura esperada
-        if (!deployment.spec?.template?.spec) {
-            throw new Error('El deployment no tiene la estructura esperada (spec.template.spec)');
-        }
-
-        const podSpec = deployment.spec.template.spec;
-
-        // Inicializar arrays si no existen
-        if (!podSpec.volumes) {
-            podSpec.volumes = [];
-        }
-        if (!podSpec.containers || podSpec.containers.length === 0) {
-            throw new Error('No se encontraron contenedores en el deployment');
-        }
-
-        const container = podSpec.containers[0];
-        if (!container.volumeMounts) {
-            container.volumeMounts = [];
-        }
-
-        // Remover volúmenes antiguos de XSLT (los que empiezan con rms- o similares)
-        // pero mantener otros volúmenes como application-yml y truststore
-        const preservedVolumeNames = new Set(['application-yml', 'truststore-otc-jks']);
-        
-        // Filtrar volúmenes existentes, manteniendo solo los que queremos preservar
-        podSpec.volumes = podSpec.volumes.filter((vol: any) => 
-            preservedVolumeNames.has(vol.name) || !vol.configMap
-        );
-
-        // Filtrar volumeMounts existentes
-        const baseMountPath = '/deployments/xslt_desa';
-        container.volumeMounts = container.volumeMounts.filter((mount: any) =>
-            !mount.mountPath.startsWith(baseMountPath) || preservedVolumeNames.has(mount.name)
-        );
-
-        // Agregar los nuevos volúmenes y mounts para cada ConfigMap
-        for (const configMapName of configMapNames) {
-            // Agregar volumen
-            podSpec.volumes.push({
-                name: configMapName,
-                configMap: {
-                    name: configMapName,
-                    defaultMode: 420
-                }
-            });
-
-            // Agregar volumeMount - todos los archivos en la misma carpeta xslt_desa
-            container.volumeMounts.push({
-                name: configMapName,
-                mountPath: `${baseMountPath}`
-            });
-        }
-
-        // Serializar de vuelta a YAML con formato apropiado
-        const updatedDeploymentYAML = YAML.stringify(deployment, {
-            indent: 2,
-            lineWidth: 0,
-            minContentWidth: 0
-        });
-
-        // Guardar el deployment actualizado
-        const updatedDeploymentPath = join(outputDirPath, 'deployment-updated.yml');
-        await writeFile(updatedDeploymentPath, updatedDeploymentYAML, { encoding });
-
-        console.log(`\n📝 Deployment actualizado guardado en: ${updatedDeploymentPath}`);
-        console.log(`\n📦 Volúmenes agregados al deployment:`);
-        configMapNames.forEach(name => {
-            console.log(`   - ${name} → montado en ${baseMountPath}`);
-        });
-
-        // Crear backup del deployment original
-        const backupPath = join(outputDirPath, 'deployment-backup.yml');
-        await writeFile(backupPath, deploymentContent, { encoding });
-        console.log(`\n💾 Backup del deployment original guardado en: ${backupPath}`);
-
-    } catch (error) {
-        console.error('❌ Error actualizando el deployment:', error);
-        throw error;
-    }
-}
-
 try {
     // Crear directorio de salida si no existe
     try {
@@ -245,7 +152,6 @@ try {
 
     // Generar ConfigMap para cada grupo
     const generatedConfigMaps: string[] = [];
-    const configMapNames: string[] = [];
     
     for (const [groupName, filesMap] of Object.entries(groupedFiles)) {
         const configMapName = groupName.toLowerCase().replace(/_/g, '-');
@@ -276,7 +182,6 @@ try {
         console.log(`   - Archivos: ${Array.from(filesMap.keys()).join(', ')}`);
         
         generatedConfigMaps.push(outputFileName);
-        configMapNames.push(configMapName);
         
         // Mostrar las primeras líneas del ConfigMap para verificación
         console.log(`   - Primeras líneas:`);
@@ -285,86 +190,19 @@ try {
         console.log('');
     }
 
-    console.log(`\n🎉 ConfigMaps generados exitosamente!`);
+    console.log(`\n🎉 ¡Proceso completado exitosamente!`);
     console.log(`📁 ConfigMaps generados en: ${outputDirPath}`);
     console.log(`📋 Archivos generados: ${generatedConfigMaps.join(', ')}`);
     
-    // Actualizar deployment con los volúmenes
-    console.log(`\n🔧 Actualizando deployment con los nuevos volúmenes...`);
-    await updateDeploymentWithVolumes(configMapNames);
+    // Generar script de aplicación para Kubernetes (opcional)
+    const applyScript = generatedConfigMaps
+        .map(file => `kubectl apply -f ${file}`)
+        .join('\n');
     
-    // Generar script de aplicación para OpenShift
-    const namespace = 'bb-dev-otc'; // Extraído del deployment
-    const applyScript = [
-        '#!/bin/bash',
-        '# Script para aplicar todos los ConfigMaps y el deployment actualizado en OpenShift',
-        '# Asegúrate de estar logueado: oc login',
-        '',
-        `NAMESPACE="${namespace}"`,
-        '',
-        'echo "🔍 Verificando namespace..."',
-        'oc project $NAMESPACE',
-        '',
-        'echo ""',
-        'echo "📦 Aplicando ConfigMaps..."',
-        ...generatedConfigMaps.map(file => `oc apply -f ${file} -n $NAMESPACE`),
-        '',
-        'echo ""',
-        'echo "🔄 Verificando ConfigMaps creados..."',
-        ...configMapNames.map(name => `oc get configmap ${name} -n $NAMESPACE`),
-        '',
-        'echo ""',
-        'echo "🚀 Aplicando deployment actualizado..."',
-        'oc apply -f deployment-updated.yml -n $NAMESPACE',
-        '',
-        'echo ""',
-        'echo "⏳ Esperando rollout del deployment..."',
-        'oc rollout status deployment/otc-core -n $NAMESPACE',
-        '',
-        'echo ""',
-        'echo "📊 Estado de los pods:"',
-        'oc get pods -l app=otc-core -n $NAMESPACE',
-        '',
-        'echo ""',
-        'echo "✅ ¡Despliegue completado!"',
-        'echo ""',
-        'echo "💡 Comandos útiles:"',
-        'echo "   Ver logs: oc logs -f deployment/otc-core -n $NAMESPACE"',
-        'echo "   Ver ConfigMaps: oc get configmaps -n $NAMESPACE | grep -E \\"rms-|otro-\\""',
-        'echo "   Entrar al pod: oc rsh deployment/otc-core -n $NAMESPACE"',
-        'echo "   Verificar archivos montados: oc rsh deployment/otc-core ls -la /deployments/xslt_desa"'
-    ].join('\n');
+    const applyScriptPath = join(outputDirPath, 'apply-configmaps.sh');
+    await writeFile(applyScriptPath, `#!/bin/bash\n# Script para aplicar todos los ConfigMaps generados\n\n${applyScript}\n`, { encoding });
     
-    const applyScriptPath = join(outputDirPath, 'apply-openshift.sh');
-    await writeFile(applyScriptPath, applyScript, { encoding });
-    
-    // Generar script de rollback
-    const rollbackScript = [
-        '#!/bin/bash',
-        '# Script de rollback para restaurar el deployment original',
-        '',
-        `NAMESPACE="${namespace}"`,
-        '',
-        'echo "⚠️  ROLLBACK: Restaurando deployment original..."',
-        'oc apply -f deployment-backup.yml -n $NAMESPACE',
-        '',
-        'echo "⏳ Esperando rollout..."',
-        'oc rollout status deployment/otc-core -n $NAMESPACE',
-        '',
-        'echo "✅ Rollback completado"'
-    ].join('\n');
-    
-    const rollbackScriptPath = join(outputDirPath, 'rollback-openshift.sh');
-    await writeFile(rollbackScriptPath, rollbackScript, { encoding });
-    
-    console.log(`\n📜 Scripts generados:`);
-    console.log(`   - apply-openshift.sh (despliegue)`);
-    console.log(`   - rollback-openshift.sh (rollback)`);
-    console.log(`\n💡 Para aplicar los cambios en OpenShift:`);
-    console.log(`   1. oc login <tu-cluster>`);
-    console.log(`   2. cd ${outputDir}`);
-    console.log(`   3. chmod +x apply-openshift.sh`);
-    console.log(`   4. ./apply-openshift.sh`);
+    console.log(`📜 Script de aplicación generado: apply-configmaps.sh`);
     
 } catch (error) {
     console.error('❌ Error ejecutando el script:', error);

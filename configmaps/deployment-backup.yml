@@ -1,0 +1,132 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    openshift.io/generated-by: OpenShiftNewApp
+    image.openshift.io/triggers: '[{"from":{"kind":"ImageStreamTag","name":"rec-otc-core:latest"},"fieldPath":"spec.template.spec.containers[?(@.name==\"otc-core\")].image"}]'
+  name: otc-core
+  namespace: bb-dev-otc
+  labels:
+    app: otc-core
+    app.kubernetes.io/component: otc-core
+    app.kubernetes.io/instance: otc-core
+    app.kubernetes.io/name: openjdk-17
+    app.openshift.io/runtime: spring
+spec:
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      updatePeriodSeconds: 1
+      intervalSeconds: 1
+      timeoutSeconds: 600
+      maxUnavailable: 25%
+      maxSurge: 25%
+  revisionHistoryLimit: 10
+  progressDeadlineSeconds: 600
+  replicas: 1
+  selector:
+    matchLabels:
+      app: otc-core
+  template:
+    metadata:
+      labels:
+        app: otc-core
+        app.language: java
+        app.project: bb-otc
+        app.team: Recaudaciones
+        app.version: 2.0.1
+      annotations:
+        openshift.io/generated-by: OpenShiftNewApp
+    spec:
+      volumes:
+        - name: application-yml
+          configMap:
+            name: otc-core-application-yml
+            defaultMode: 420
+        - name: rms-tuklajem
+          configMap:
+            name: rms-tuklajem
+            defaultMode: 420
+        - name: truststore-otc-jks
+          secret:
+            secretName: truststore-otc-jks
+            defaultMode: 420
+      containers:
+        - resources:
+            limits:
+              cpu: 100m
+              memory: 600Mi
+            requests:
+              cpu: 50m
+              memory: 400Mi
+          readinessProbe:
+            httpGet:
+              path: /signals/healthcheck/readiness
+              port: 8778
+              scheme: HTTP
+            initialDelaySeconds: 90
+            timeoutSeconds: 20
+            periodSeconds: 600
+            successThreshold: 1
+            failureThreshold: 3
+          terminationMessagePath: /dev/termination-log
+          name: otc-core
+          livenessProbe:
+            httpGet:
+              path: /signals/healthcheck/livenessProbe
+              port: 8778
+              scheme: HTTP
+            initialDelaySeconds: 90
+            timeoutSeconds: 20
+            periodSeconds: 600
+            successThreshold: 1
+            failureThreshold: 3
+          env:
+            - name: APP_LOGGING_LEVEL
+              value: INFO
+            - name: ROOT_LOGGING_LEVEL
+              value: ERROR
+            - name: TZ
+              value: America/Guayaquil
+            - name: JAVA_OPTS
+              value: '-Xms64m -Xmx4096m'
+            - name: GC_MAX_METASPACE_SIZE
+              value: '256'
+            - name: JAVA_OPTS_APPEND
+              value: '-Djdk.tls.client.protocols=TLSv1.2 -Dfile.encoding=UTF-8 -Duser.timezone=America/Guayaquil'
+            - name: OTC_REDIS_HOST
+              value: otc-cache.bb-dev-otc.svc.cluster.local
+            - name: LOGGING_LEVEL_ROOT
+              value: INFO
+            - name: AWS_XRAY_DAEMON_ADDRESS
+              value: '172.30.169.249:2000'
+          ports:
+            - containerPort: 8080
+              protocol: TCP
+            - containerPort: 8443
+              protocol: TCP
+            - containerPort: 8778
+              protocol: TCP
+          imagePullPolicy: Always
+          volumeMounts:
+            - name: application-yml
+              mountPath: /deployments/application.properties
+              subPath: application.properties
+            - name: rms-tuklajem
+              mountPath: /deployments/xslt_desa
+            - name: truststore-otc-jks
+              mountPath: /secret/truststore-otc.jks
+              subPath: truststore-otc.jks
+          terminationMessagePolicy: File
+          image: >-
+            image-registry.openshift-image-registry.svc:5000/bb-dev-otc/rec-otc-core:latest
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+      schedulerName: default-scheduler
+      hostAliases:
+        - ip: 172.16.11.16
+          hostnames:
+            - jms.bolivariano.fin.ec
+        - ip: 172.16.30.182
+          hostnames:
+            - soavides.bolivariano.fin.ec
